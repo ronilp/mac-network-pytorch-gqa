@@ -105,7 +105,8 @@ def valid(epoch):
 
 
 if __name__ == '__main__':
-    with open('data/dic.pkl', 'rb') as f:
+    dataset_type = 'CLEVR'
+    with open(f'data/{dataset_type}_dic.pkl', 'rb') as f:
         dic = pickle.load(f)
 
     n_words = len(dic['word_dic']) + 1

@@ -62,7 +62,7 @@ def create_dataset(split):
 
     print(split, 'total', size * batch_size)
 
-    f = h5py.File('data/{}_features.hdf5'.format(split), 'w', libver='latest')
+    f = h5py.File('data/CLEVR_{}_features.hdf5'.format(split), 'w', libver='latest')
     dset = f.create_dataset('data', (size * batch_size, 1024, 14, 14),
                             dtype='f4')
 
