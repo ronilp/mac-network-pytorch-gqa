@@ -50,7 +50,7 @@ class CLEVR(Dataset):
 
 batch_size = 50
 
-resnet = resnet101(True).cuda()
+resnet = resnet101(True).to(device)
 resnet.eval()
 resnet.forward = forward.__get__(resnet, ResNet)
 
