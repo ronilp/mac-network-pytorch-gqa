@@ -38,7 +38,7 @@ def train(epoch):
     moving_loss = 0
 
     net.train(True)
-    for image, question, q_len, answer, _ in pbar:
+    for image, question, q_len, answer in pbar:
         image, question, answer = (
             image.to(device),
             question.to(device),
@@ -59,11 +59,7 @@ def train(epoch):
         else:
             moving_loss = moving_loss * 0.99 + correct * 0.01
 
-        pbar.set_description(
-            'Epoch: {}; Loss: {:.5f}; Acc: {:.5f}'.format(
-                epoch + 1, loss.item(), moving_loss
-            )
-        )
+        pbar.set_description('Epoch: {}; Loss: {:.5f}; Acc: {:.5f}'.format(epoch + 1, loss.item(), moving_loss))
 
         accumulate(net_running, net)
 
@@ -78,34 +74,29 @@ def valid(epoch):
     dataset = iter(valid_set)
 
     net_running.train(False)
-    family_correct = Counter()
-    family_total = Counter()
+    correct_counts = 0
+    total_counts = 0
     with torch.no_grad():
-        for image, question, q_len, answer, family in tqdm(dataset):
+        for image, question, q_len, answer in tqdm(dataset):
             image, question = image.to(device), question.to(device)
 
             output = net_running(image, question, q_len)
             correct = output.detach().argmax(1) == answer.to(device)
-            for c, fam in zip(correct, family):
+            for c in correct:
                 if c:
-                    family_correct[fam] += 1
-                family_total[fam] += 1
+                    correct_counts += 1
+                total_counts += 1
 
     with open('log/log_{}.txt'.format(str(epoch + 1).zfill(2)), 'w') as w:
-        for k, v in family_total.items():
-            w.write('{}: {:.5f}\n'.format(k, family_correct[k] / v))
+        w.write('{:.5f}\n'.format(correct_counts / total_counts))
 
-    print(
-        'Avg Acc: {:.5f}'.format(
-            sum(family_correct.values()) / sum(family_total.values())
-        )
-    )
+    print('Avg Acc: {:.5f}'.format(correct_counts / total_counts))
 
     clevr.close()
 
 
 if __name__ == '__main__':
-    dataset_type = 'CLEVR'
+    dataset_type = 'CLEVR' # gqa
     with open(f'data/{dataset_type}_dic.pkl', 'rb') as f:
         dic = pickle.load(f)
 
@@ -123,7 +114,5 @@ if __name__ == '__main__':
         train(epoch)
         valid(epoch)
 
-        with open(
-            'checkpoint/checkpoint_{}.model'.format(str(epoch + 1).zfill(2)), 'wb'
-        ) as f:
+        with open('checkpoint/checkpoint_{}.model'.format(str(epoch + 1).zfill(2)), 'wb') as f:
             torch.save(net_running.state_dict(), f)

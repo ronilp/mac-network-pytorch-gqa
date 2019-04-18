@@ -20,18 +20,17 @@ def process_question(root, split, word_dic=None, answer_dic=None, dataset_type='
     if answer_dic is None:
         answer_dic = {}
 
-    with open(os.path.join(root, 'questions',
-                           f'{dataset_type}_{split}_questions.json')) as f:
+    with open(os.path.join(root, 'questions', f'{dataset_type}_{split}_questions.json')) as f:
         data = json.load(f)
 
     result = []
     word_index = 1
     answer_index = 0
     i = 0
-    num_questions = 100
+    NUM_QUESTIONS = 100
 
     for question in tqdm.tqdm(data['questions']):
-        if i > num_questions:
+        if i > NUM_QUESTIONS:
             break
 
         i += 1
@@ -51,13 +50,12 @@ def process_question(root, split, word_dic=None, answer_dic=None, dataset_type='
 
         try:
             answer = answer_dic[answer_word]
-
         except:
             answer = answer_index
             answer_dic[answer_word] = answer_index
             answer_index += 1
 
-        result.append((question[image_index[dataset_type]], question_token, answer, question['question_family_index']))
+        result.append((question[image_index[dataset_type]], question_token, answer))
 
     with open(f'data/{dataset_type}_{split}.pkl', 'wb') as f:
         pickle.dump(result, f)
@@ -67,9 +65,9 @@ def process_question(root, split, word_dic=None, answer_dic=None, dataset_type='
 
 if __name__ == '__main__':
     root = sys.argv[1]
-    dataset_type = 'CLEVR'
+    dataset_type = 'gqa'
     word_dic, answer_dic = process_question(root, 'train', dataset_type=dataset_type)
-    process_question(root, 'val', word_dic, answer_dic)
+    process_question(root, 'val', word_dic, answer_dic, dataset_type=dataset_type)
 
     with open(f'data/{dataset_type}_dic.pkl', 'wb') as f:
         pickle.dump({'word_dic': word_dic, 'answer_dic': answer_dic}, f)

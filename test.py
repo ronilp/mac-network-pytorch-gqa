@@ -24,21 +24,17 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 for epoch in range(n_epoch):
     dataset = iter(train_set)
     pbar = tqdm(dataset)
-    family_correct = Counter()
-    family_total = Counter()
+    correct_counts = 0
+    total_counts = 0
 
-    for image, question, q_len, answer, family in pbar:
+    for image, question, q_len, answer in pbar:
         image, question = image.to(device), question.to(device)
         output = net(image, question, q_len)
         correct = output.detach().argmax(1) == answer.to(device)
-        for c, fam in zip(correct, family):
+        for c in correct:
             if c:
-                family_correct[fam] += 1
-            family_total[fam] += 1
+                correct_counts += 1
+            total_counts += 1
 
-    print(
-        'Avg Acc: {:.5f}'.format(
-            sum(family_correct.values()) / sum(family_total.values())
-        )
-    )
+    print('Avg Acc: {:.5f}'.format(correct_counts / total_counts))
 
