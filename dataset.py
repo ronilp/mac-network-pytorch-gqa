@@ -48,7 +48,7 @@ class GQA(Dataset):
         self.root = root
         self.split = split
 
-        self.h = h5py.File('data/gqa_{}_features.hdf5'.format(split), 'r')
+        self.h = h5py.File('data/gqa_features.hdf5'.format(split), 'r')
         self.img = self.h['features']
         self.img_info = json.load(open('data/gqa_objects_merged_info.json', 'r'))
 
