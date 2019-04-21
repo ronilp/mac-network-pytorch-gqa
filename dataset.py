@@ -1,3 +1,4 @@
+import json
 import os
 import pickle
 
@@ -39,6 +40,30 @@ class CLEVR(Dataset):
     def __len__(self):
         return len(self.data)
 
+class GQA(Dataset):
+    def __init__(self, root, split='train', transform=None):
+        with open(f'data/gqa_{split}.pkl', 'rb') as f:
+            self.data = pickle.load(f)
+
+        self.root = root
+        self.split = split
+
+        self.h = h5py.File('data/gqa_{}_features.hdf5'.format(split), 'r')
+        self.img = self.h['features']
+        self.img_info = json.load(open('data/gqa_objects_merged_info.json', 'r'))
+
+    def close(self):
+        self.h.close()
+
+    def __getitem__(self, index):
+        imgfile, question, answer = self.data[index]
+        idx = int(self.img_info[imgfile]['index'])
+        img = torch.from_numpy(self.img[idx])
+        return img, question, len(question), answer
+
+    def __len__(self):
+        return len(self.data)
+
 transform = transforms.Compose([
     Scale([224, 224]),
     transforms.Pad(4),
@@ -59,6 +84,9 @@ def collate_data(batch):
 
     for i, b in enumerate(sort_by_len):
         image, question, length, answer = b
+        if image is None:
+            continue
+
         images.append(image)
         length = len(question)
         questions[i, :length] = question
