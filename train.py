@@ -9,12 +9,13 @@ from torch import optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from dataset import CLEVR, collate_data, transform
-from model import MACNetwork
+from dataset import CLEVR, collate_data, transform, GQA
+from model_gqa import MACNetwork
 
 batch_size = 64
 n_epoch = 20
-dim = 512
+dim_dict = {'CLEVR' : 512,
+            'gqa' : 2048}
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -27,10 +28,14 @@ def accumulate(model1, model2, decay=0.999):
         par1[k].data.mul_(decay).add_(1 - decay, par2[k].data)
 
 
-def train(epoch):
-    clevr = CLEVR(sys.argv[1], transform=transform)
+def train(epoch, dataset_type):
+    if dataset_type == "CLEVR":
+        dataset_object = CLEVR('data/CLEVR_v1.0', transform=transform)
+    else:
+        dataset_object = GQA('data/gqa', transform=transform)
+
     train_set = DataLoader(
-        clevr, batch_size=batch_size, num_workers=4, collate_fn=collate_data
+        dataset_object, batch_size=batch_size, num_workers=1, collate_fn=collate_data
     )
 
     dataset = iter(train_set)
@@ -63,13 +68,17 @@ def train(epoch):
 
         accumulate(net_running, net)
 
-    clevr.close()
+    dataset_object.close()
 
 
-def valid(epoch):
-    clevr = CLEVR(sys.argv[1], 'val', transform=None)
+def valid(epoch, dataset_type):
+    if dataset_type == "CLEVR":
+        dataset_object = CLEVR('data/CLEVR_v1.0', 'val', transform=None)
+    else:
+        dataset_object = GQA('data/gqa', 'val', transform=None)
+
     valid_set = DataLoader(
-        clevr, batch_size=batch_size, num_workers=4, collate_fn=collate_data
+        dataset_object, batch_size=batch_size, num_workers=4, collate_fn=collate_data
     )
     dataset = iter(valid_set)
 
@@ -92,27 +101,27 @@ def valid(epoch):
 
     print('Avg Acc: {:.5f}'.format(correct_counts / total_counts))
 
-    clevr.close()
+    dataset_object.close()
 
 
 if __name__ == '__main__':
-    dataset_type = 'CLEVR' # gqa
+    dataset_type = 'gqa' # gqa
     with open(f'data/{dataset_type}_dic.pkl', 'rb') as f:
         dic = pickle.load(f)
 
     n_words = len(dic['word_dic']) + 1
     n_answers = len(dic['answer_dic'])
 
-    net = MACNetwork(n_words, dim).to(device)
-    net_running = MACNetwork(n_words, dim).to(device)
+    net = MACNetwork(n_words, dim_dict[dataset_type]).to(device)
+    net_running = MACNetwork(n_words, dim_dict[dataset_type]).to(device)
     accumulate(net_running, net, 0)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(net.parameters(), lr=1e-4)
 
     for epoch in range(n_epoch):
-        train(epoch)
-        valid(epoch)
+        train(epoch, dataset_type)
+        valid(epoch, dataset_type)
 
         with open('checkpoint/checkpoint_{}.model'.format(str(epoch + 1).zfill(2)), 'wb') as f:
             torch.save(net_running.state_dict(), f)

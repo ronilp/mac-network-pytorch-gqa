@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from dataset import CLEVR, collate_data, transform
-from model import MACNetwork
+from model_gqa import MACNetwork
 
 batch_size = 64
 n_epoch = 20

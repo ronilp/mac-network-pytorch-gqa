@@ -4,6 +4,9 @@ from torch import nn
 from torch.nn.init import kaiming_uniform_, xavier_uniform_, normal
 import torch.nn.functional as F
 
+import config
+
+
 def linear(in_dim, out_dim, bias=True):
     lin = nn.Linear(in_dim, out_dim, bias=bias)
     xavier_uniform_(lin.weight)
@@ -118,6 +121,21 @@ class MACUnit(nn.Module):
         self.dim = dim
         self.max_step = max_step
         self.dropout = dropout
+        self.dropouts["encInput"]: config.encInputDropout
+        self.dropouts["encState"]: config.encStateDropout
+        self.dropouts["stem"]: config.stemDropout
+        self.dropouts["question"]: config.qDropout
+        self.dropouts["memory"]: config.memoryDropout
+        self.dropouts["read"]: config.readDropout
+        self.dropouts["write"]: config.writeDropout
+        self.dropouts["output"]: config.outputDropout
+        self.dropouts["controlPre"]: config.controlPreDropout
+        self.dropouts["controlPost"]: config.controlPostDropout
+        self.dropouts["wordEmb"]: config.wordEmbDropout
+        self.dropouts["word"]: config.wordDp
+        self.dropouts["vocab"]: config.vocabDp
+        self.dropouts["object"]: config.objectDp
+        self.dropouts["wordStandard"]: config.wordStandardDp
 
     def get_mask(self, x, dropout):
         mask = torch.empty_like(x).bernoulli_(1 - dropout)
@@ -197,15 +215,15 @@ class MACNetwork(nn.Module):
     def forward(self, image, question, question_len, dropout=0.15):
         b_size = question.size(0)
 
-        img = self.conv(image)
+        # img = self.conv(image)
+        img = image
         img = img.view(b_size, self.dim, -1)
 
         embed = self.embed(question)
         embed = nn.utils.rnn.pack_padded_sequence(embed, question_len,
                                                 batch_first=True)
         lstm_out, (h, _) = self.lstm(embed)
-        lstm_out, _ = nn.utils.rnn.pad_packed_sequence(lstm_out,
-                                                    batch_first=True)
+        lstm_out, _ = nn.utils.rnn.pad_packed_sequence(lstm_out, batch_first=True)
         lstm_out = self.lstm_proj(lstm_out)
         h = h.permute(1, 0, 2).contiguous().view(b_size, -1)
 
