@@ -26,14 +26,8 @@ def process_question(root, split, word_dic=None, answer_dic=None, dataset_type='
     result = []
     word_index = 1
     answer_index = 0
-    i = 0
-    NUM_QUESTIONS = 100
 
     for question in tqdm.tqdm(data['questions']):
-        if i > NUM_QUESTIONS:
-            break
-
-        i += 1
         words = nltk.word_tokenize(question['question'])
         question_token = []
 
