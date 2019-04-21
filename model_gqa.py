@@ -121,6 +121,7 @@ class MACUnit(nn.Module):
         self.dim = dim
         self.max_step = max_step
         self.dropout = dropout
+        self.dropouts = {}
         self.dropouts["encInput"]: config.encInputDropout
         self.dropouts["encState"]: config.encStateDropout
         self.dropouts["stem"]: config.stemDropout
