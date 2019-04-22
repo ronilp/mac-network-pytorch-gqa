@@ -14,6 +14,7 @@ To train:
 1. Download and extract either <br />
 CLEVR v1.0 dataset from http://cs.stanford.edu/people/jcjohns/clevr/ or <br />
 GQA dataset from https://cs.stanford.edu/people/dorarad/gqa/download.html <br />
+<br />
 For GQA
 ```
 cd data
@@ -37,6 +38,7 @@ cd ..
 2. Preprocessing question data and extracting image features using ResNet 101 (Not required for GQA)
 <br />
 For CLEVR
+<br />
 a. Extract image features
 
 ```
