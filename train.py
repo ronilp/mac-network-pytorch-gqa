@@ -13,7 +13,7 @@ import multiprocessing
 from dataset import CLEVR, collate_data, transform, GQA
 from model_gqa import MACNetwork
 
-batch_size = 128
+batch_size = 196
 n_epoch = 20
 dim_dict = {'CLEVR': 512,
             'gqa': 2048}
@@ -86,12 +86,14 @@ def valid(epoch, dataset_type):
     net_running.train(False)
     correct_counts = 0
     total_counts = 0
+    running_loss = 0.0
     with torch.no_grad():
         for image, question, q_len, answer in tqdm(dataset):
             image, question = image.to(device), question.to(device)
 
             output = net_running(image, question, q_len)
             correct = output.detach().argmax(1) == answer.to(device)
+            running_loss += criterion(output, answer).item()
             for c in correct:
                 if c:
                     correct_counts += 1
@@ -100,7 +102,8 @@ def valid(epoch, dataset_type):
     with open('log/log_{}.txt'.format(str(epoch + 1).zfill(2)), 'w') as w:
         w.write('{:.5f}\n'.format(correct_counts / total_counts))
 
-    print('Avg Acc: {:.5f}'.format(correct_counts / total_counts))
+    print('Validation Accuracy: {:.5f}'.format(correct_counts / total_counts))
+    print('Validation Loss: {:.8f}'.format(running_loss / total_counts))
 
     dataset_object.close()
 
