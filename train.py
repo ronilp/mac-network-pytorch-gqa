@@ -106,7 +106,7 @@ def valid(epoch, dataset_type):
 
 
 if __name__ == '__main__':
-    dataset_type = 'gqa'  # gqa
+    dataset_type = sys.argv[1]
     with open(f'data/{dataset_type}_dic.pkl', 'rb') as f:
         dic = pickle.load(f)
 

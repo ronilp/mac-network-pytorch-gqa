@@ -58,8 +58,8 @@ def process_question(root, split, word_dic=None, answer_dic=None, dataset_type='
 
 
 if __name__ == '__main__':
-    root = sys.argv[1]
-    dataset_type = 'gqa'
+    dataset_type = sys.argv[1]
+    root = sys.argv[2]
     word_dic, answer_dic = process_question(root, 'train', dataset_type=dataset_type)
     process_question(root, 'val', word_dic, answer_dic, dataset_type=dataset_type)
 
