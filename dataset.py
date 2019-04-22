@@ -84,9 +84,6 @@ def collate_data(batch):
 
     for i, b in enumerate(sort_by_len):
         image, question, length, answer = b
-        if image is None:
-            continue
-
         images.append(image)
         length = len(question)
         questions[i, :length] = question

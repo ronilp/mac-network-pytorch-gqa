@@ -1,4 +1,5 @@
 import torch
+from block.models.networks.fusions.fusions import Tucker
 from torch.autograd import Variable
 from torch import nn
 from torch.nn.init import kaiming_uniform_, xavier_uniform_, normal
@@ -52,16 +53,24 @@ class ReadUnit(nn.Module):
         self.mem = linear(dim, dim)
         self.concat = linear(dim * 2, dim)
         self.attn = linear(dim, 1)
+        self.tucker = Tucker((4096, 2048), 2048)
 
     def forward(self, memory, know, control):
         mem = self.mem(memory[-1]).unsqueeze(2)
-        concat = self.concat(torch.cat([mem * know, know], 1) \
-                                .permute(0, 2, 1))
-        attn = concat * control[-1].unsqueeze(1)
-        attn = self.attn(attn).squeeze(2)
-        attn = F.softmax(attn, 1).unsqueeze(1)
+        # concat = self.concat(torch.cat([mem * know, know], 1).permute(0, 2, 1))  # 3.1 a
+        # attn = concat * control[-1].unsqueeze(1)  # 3.1 b
 
-        read = (attn * know).sum(2)
+        # attn = self.tucker([torch.cat([mem * know, know], 1).permute(2, 1, 0).squeeze(2), control[-1].repeat(392, 1)])
+        s_matrix = torch.cat([mem * know, know], 1).permute(2, 1, 0)
+        attn = torch.zeros(know.size(0), s_matrix[:, :, 0].size(0), 2048)
+        for i in range(know.size(0)):
+            attn[i] = self.tucker([s_matrix[:, :, i], control[-1][i].repeat(s_matrix[:, :, i].size(0), 1)])
+
+
+        attn = self.attn(attn).squeeze(2)  # no name
+        attn = F.softmax(attn, 1).unsqueeze(1) # 3.2
+
+        read = (attn * know).sum(2) # 3.3
 
         return read
 
