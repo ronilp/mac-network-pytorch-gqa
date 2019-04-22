@@ -61,11 +61,10 @@ def train(epoch, dataset_type):
 
         if moving_loss == 0:
             moving_loss = correct
-
         else:
             moving_loss = moving_loss * 0.99 + correct * 0.01
 
-        pbar.set_description('Epoch: {}; Loss: {:.5f}; Acc: {:.5f}'.format(epoch + 1, loss.item(), moving_loss))
+        pbar.set_description('Epoch: {}; Loss: {:.8f}; Acc: {:.5f}'.format(epoch + 1, loss.item(), moving_loss))
 
         accumulate(net_running, net)
 
@@ -87,17 +86,24 @@ def valid(epoch, dataset_type):
     correct_counts = 0
     total_counts = 0
     running_loss = 0.0
+    batches_done = 0
     with torch.no_grad():
-        for image, question, q_len, answer in tqdm(dataset):
+        pbar = tqdm(dataset)
+        for image, question, q_len, answer in pbar:
             image, question = image.to(device), question.to(device)
 
             output = net_running(image, question, q_len)
             correct = output.detach().argmax(1) == answer.to(device)
-            running_loss += criterion(output, answer).item()
+            loss = criterion(output, answer)
+            running_loss += loss.item()
+
+            batches_done += 1
             for c in correct:
                 if c:
                     correct_counts += 1
                 total_counts += 1
+
+            pbar.set_description('Epoch: {}; Loss: {:.8f}; Acc: {:.5f}'.format(epoch + 1, loss.item(), correct_counts / batches_done))
 
     with open('log/log_{}.txt'.format(str(epoch + 1).zfill(2)), 'w') as w:
         w.write('{:.5f}\n'.format(correct_counts / total_counts))
