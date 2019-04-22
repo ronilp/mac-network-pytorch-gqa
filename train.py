@@ -8,14 +8,15 @@ from torch import nn
 from torch import optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+import multiprocessing
 
 from dataset import CLEVR, collate_data, transform, GQA
 from model_gqa import MACNetwork
 
-batch_size = 64
+batch_size = 128
 n_epoch = 20
-dim_dict = {'CLEVR' : 512,
-            'gqa' : 2048}
+dim_dict = {'CLEVR': 512,
+            'gqa': 2048}
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -35,7 +36,7 @@ def train(epoch, dataset_type):
         dataset_object = GQA('data/gqa', transform=transform)
 
     train_set = DataLoader(
-        dataset_object, batch_size=batch_size, num_workers=1, collate_fn=collate_data
+        dataset_object, batch_size=batch_size, num_workers=multiprocessing.cpu_count(), collate_fn=collate_data
     )
 
     dataset = iter(train_set)
@@ -78,7 +79,7 @@ def valid(epoch, dataset_type):
         dataset_object = GQA('data/gqa', 'val', transform=None)
 
     valid_set = DataLoader(
-        dataset_object, batch_size=batch_size, num_workers=4, collate_fn=collate_data
+        dataset_object, batch_size=batch_size, num_workers=4 * multiprocessing.cpu_count(), collate_fn=collate_data
     )
     dataset = iter(valid_set)
 
@@ -105,15 +106,15 @@ def valid(epoch, dataset_type):
 
 
 if __name__ == '__main__':
-    dataset_type = 'gqa' # gqa
+    dataset_type = sys.argv[1]
     with open(f'data/{dataset_type}_dic.pkl', 'rb') as f:
         dic = pickle.load(f)
 
     n_words = len(dic['word_dic']) + 1
     n_answers = len(dic['answer_dic'])
 
-    net = MACNetwork(n_words, dim_dict[dataset_type]).to(device)
-    net_running = MACNetwork(n_words, dim_dict[dataset_type]).to(device)
+    net = MACNetwork(n_words, dim_dict[dataset_type], classes=n_answers).to(device)
+    net_running = MACNetwork(n_words, dim_dict[dataset_type], classes=n_answers).to(device)
     accumulate(net_running, net, 0)
 
     criterion = nn.CrossEntropyLoss()
