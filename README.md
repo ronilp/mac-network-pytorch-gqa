@@ -33,30 +33,40 @@ wget http://nlp.stanford.edu/data/gqa/objectFeatures.zip
 unzip objectFeatures.zip
 cd ..
 ```
+
 2. Preprocessing question data and extracting image features using ResNet 101 (Not required for GQA)
 <br />
 For CLEVR
 a. Extract image features
+
 ```
 python image_feature.py data/CLEVR_v1.0
 ```
+
 b. Preprocess questions
+
 ```
 python preprocess.py CLEVR data/CLEVR_v1.0
 ```
+
 For GQA<br />
 a. Merge object features (this may take some time)
+
 ```
 python merge.py --objects
 mv data/gqa_objects.hdf5 data/gqa_features.hdf5
 ```
+
 b. Preprocess questions
+
 ```
 python preprocess.py gqa data/gqa
 ```
+
 !CAUTION! the size of file created by image_feature.py is very large! You may use hdf5 compression, but it will slow down feature extraction.
 <br />
 3. Run train.py with dataset type as argument (gqa or CLEVR)
+
 ```
 python train.py gqa
 ```
