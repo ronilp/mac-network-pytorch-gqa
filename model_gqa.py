@@ -53,21 +53,34 @@ class ReadUnit(nn.Module):
         self.mem = linear(dim, dim)
         self.concat = linear(dim * 2, dim)
         self.attn = linear(dim, 1)
-        self.tucker = Tucker((4096, 2048), 2048)
+        self.tucker = Tucker((2048, 2048), 1, mm_dim=300, shared=True)
 
     def forward(self, memory, know, control):
         mem = self.mem(memory[-1]).unsqueeze(2)
         # concat = self.concat(torch.cat([mem * know, know], 1).permute(0, 2, 1))  # 3.1 a
         # attn = concat * control[-1].unsqueeze(1)  # 3.1 b
-
-        # attn = self.tucker([torch.cat([mem * know, know], 1).permute(2, 1, 0).squeeze(2), control[-1].repeat(392, 1)])
-        s_matrix = torch.cat([mem * know, know], 1).permute(2, 1, 0)
-        attn = torch.zeros(know.size(0), s_matrix[:, :, 0].size(0), 2048)
-        for i in range(know.size(0)):
-            attn[i] = self.tucker([s_matrix[:, :, i], control[-1][i].repeat(s_matrix[:, :, i].size(0), 1)])
+        # s_matrix = torch.cat([mem * know, know], 1).permute(2, 1, 0)
 
 
-        attn = self.attn(attn).squeeze(2)  # no name
+        s_matrix = (mem * know) #.permute(2, 1, 0)
+
+        s_matrix = s_matrix.view(-1, 2048) #.view(100, 2048, 16)
+
+        # if torch.cuda.is_available():
+        #     attn = torch.cuda.FloatTensor(know.size(0) * know.size(1), know.size(2))
+        # else:
+        #     attn = torch.zeros(know.size(0) * know.size(1), know.size(2))
+
+        # for i in range(know.size(0)):
+        #     attn[i] = self.tucker([s_matrix[:, :, i], control[-1][i].repeat(s_matrix[:, :, i].size(0), 1)])
+
+
+        # for i in range(know.size(0)):
+        #     attn[i] = self.tucker([s_matrix[:, :, i], control[-1][i].repeat(s_matrix[:, :, i].size(0), 1)]).squeeze(1)
+
+        attn = self.tucker([s_matrix, control[-1].repeat(know.size(2), 1)]).view(know.size(2), know.size(0))
+        attn = attn.transpose(0, 1)
+        # attn = self.attn(attn).squeeze(2)  # no name
         attn = F.softmax(attn, 1).unsqueeze(1) # 3.2
 
         read = (attn * know).sum(2) # 3.3
