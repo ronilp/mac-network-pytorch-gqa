@@ -1,15 +1,12 @@
-import sys
+import multiprocessing
 import pickle
-from collections import Counter
+import sys
 
-import gensim
-import numpy as np
 import torch
 from torch import nn
 from torch import optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-import multiprocessing
 
 from dataset import CLEVR, collate_data, transform, GQA
 from model_gqa import MACNetwork
