@@ -9,6 +9,8 @@ from torchvision import transforms
 from PIL import Image
 from transforms import Scale
 
+nltk.download('punkt')
+
 image_index = {'CLEVR': 'image_filename',
                'gqa': 'imageId'}
 
