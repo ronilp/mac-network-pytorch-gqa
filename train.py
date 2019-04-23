@@ -2,6 +2,7 @@ import sys
 import pickle
 from collections import Counter
 
+import gensim
 import numpy as np
 import torch
 from torch import nn

@@ -6,6 +6,7 @@ from torch.nn.init import kaiming_uniform_, xavier_uniform_, normal
 import torch.nn.functional as F
 
 import config
+from utils import get_or_load_embeddings
 
 
 def linear(in_dim, out_dim, bias=True):
@@ -208,6 +209,8 @@ class MACNetwork(nn.Module):
                                 nn.ELU())
 
         self.embed = nn.Embedding(n_vocab, embed_hidden)
+        self.embed.weight.data = torch.Tensor(get_or_load_embeddings())
+        self.embed.weight.requires_grad = False
         self.lstm = nn.LSTM(embed_hidden, dim,
                         batch_first=True, bidirectional=True)
         self.lstm_proj = nn.Linear(dim * 2, dim)
