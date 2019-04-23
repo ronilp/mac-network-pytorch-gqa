@@ -88,11 +88,15 @@ def valid(epoch, dataset_type):
     with torch.no_grad():
         pbar = tqdm(dataset)
         for image, question, q_len, answer in pbar:
-            image, question = image.to(device), question.to(device)
+            image, question, answer = (
+                image.to(device),
+                question.to(device),
+                answer.to(device),
+            )
 
             output = net_running(image, question, q_len)
-            correct = output.detach().argmax(1) == answer.to(device)
             loss = criterion(output, answer)
+            correct = output.detach().argmax(1) == answer
             running_loss += loss.item()
 
             batches_done += 1
