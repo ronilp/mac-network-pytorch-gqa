@@ -124,8 +124,8 @@ if __name__ == '__main__':
     n_words = len(dic['word_dic']) + 1
     n_answers = len(dic['answer_dic'])
 
-    net = MACNetwork(n_words, dim_dict[dataset_type], classes=n_answers).to(device)
-    net_running = MACNetwork(n_words, dim_dict[dataset_type], classes=n_answers).to(device)
+    net = MACNetwork(n_words, dim_dict[dataset_type], classes=n_answers, max_step=4).to(device)
+    net_running = MACNetwork(n_words, dim_dict[dataset_type], classes=n_answers, max_step=4).to(device)
     accumulate(net_running, net, 0)
 
     criterion = nn.CrossEntropyLoss()
