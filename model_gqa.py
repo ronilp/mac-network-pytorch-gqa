@@ -54,7 +54,7 @@ class ReadUnit(nn.Module):
         self.mem = linear(dim, dim)
         self.concat = linear(dim * 2, dim)
         self.attn = linear(dim, 1)
-        self.tucker = Tucker((2048, 2048), 1, mm_dim=300, shared=True)
+        self.tucker = Tucker((2048, 2048), 1, mm_dim=50, shared=True)
 
     def forward(self, memory, know, control):
         mem = self.mem(memory[-1]).unsqueeze(2)

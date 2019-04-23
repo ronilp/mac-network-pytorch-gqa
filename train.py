@@ -11,8 +11,8 @@ from tqdm import tqdm
 from dataset import CLEVR, collate_data, transform, GQA
 from model_gqa import MACNetwork
 
-batch_size = 196
-n_epoch = 20
+batch_size = 128
+n_epoch = 25
 dim_dict = {'CLEVR': 512,
             'gqa': 2048}
 
