@@ -11,6 +11,19 @@ import h5py
 
 from transforms import Scale
 
+img = None
+img_info = {}
+def gqa_feature_loader():
+    global img, img_info
+    if img is not None:
+        return img, img_info
+
+    h = h5py.File('data/gqa_features.hdf5', 'r')
+    img = h['features']
+    img_info = json.load(open('data/gqa_objects_merged_info.json', 'r'))
+    return img, img_info
+
+
 class CLEVR(Dataset):
     def __init__(self, root, split='train', transform=None):
         with open(f'data/CLEVR_{split}.pkl', 'rb') as f:
@@ -47,13 +60,7 @@ class GQA(Dataset):
 
         self.root = root
         self.split = split
-
-        self.h = h5py.File('data/gqa_features.hdf5'.format(split), 'r')
-        self.img = self.h['features']
-        self.img_info = json.load(open('data/gqa_objects_merged_info.json', 'r'))
-
-    def close(self):
-        self.h.close()
+        self.img, self.img_info = gqa_feature_loader()
 
     def __getitem__(self, index):
         imgfile, question, answer = self.data[index]
