@@ -70,6 +70,9 @@ class GQA(Dataset):
 
     def __len__(self):
         return len(self.data)
+    
+    def close(self):
+        pass
 
 transform = transforms.Compose([
     Scale([224, 224]),
