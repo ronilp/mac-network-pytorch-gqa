@@ -1,9 +1,8 @@
 import torch
-from block.models.networks.fusions.fusions import Tucker
-from torch.autograd import Variable
-from torch import nn
-from torch.nn.init import kaiming_uniform_, xavier_uniform_, normal
 import torch.nn.functional as F
+from block.models.networks.fusions.fusions import Tucker
+from torch import nn
+from torch.nn.init import kaiming_uniform_, xavier_uniform_
 
 import config
 from utils import get_or_load_embeddings
@@ -58,33 +57,12 @@ class ReadUnit(nn.Module):
 
     def forward(self, memory, know, control):
         mem = self.mem(memory[-1]).unsqueeze(2)
-        # concat = self.concat(torch.cat([mem * know, know], 1).permute(0, 2, 1))  # 3.1 a
-        # attn = concat * control[-1].unsqueeze(1)  # 3.1 b
-        # s_matrix = torch.cat([mem * know, know], 1).permute(2, 1, 0)
-
-
-        s_matrix = (mem * know) #.permute(2, 1, 0)
-
-        s_matrix = s_matrix.view(-1, 2048) #.view(100, 2048, 16)
-
-        # if torch.cuda.is_available():
-        #     attn = torch.cuda.FloatTensor(know.size(0) * know.size(1), know.size(2))
-        # else:
-        #     attn = torch.zeros(know.size(0) * know.size(1), know.size(2))
-
-        # for i in range(know.size(0)):
-        #     attn[i] = self.tucker([s_matrix[:, :, i], control[-1][i].repeat(s_matrix[:, :, i].size(0), 1)])
-
-
-        # for i in range(know.size(0)):
-        #     attn[i] = self.tucker([s_matrix[:, :, i], control[-1][i].repeat(s_matrix[:, :, i].size(0), 1)]).squeeze(1)
-
+        s_matrix = (mem * know)
+        s_matrix = s_matrix.view(-1, 2048)
         attn = self.tucker([s_matrix, control[-1].repeat(know.size(2), 1)]).view(know.size(2), know.size(0))
         attn = attn.transpose(0, 1)
-        # attn = self.attn(attn).squeeze(2)  # no name
-        attn = F.softmax(attn, 1).unsqueeze(1) # 3.2
-
-        read = (attn * know).sum(2) # 3.3
+        attn = F.softmax(attn, 1).unsqueeze(1)
+        read = (attn * know).sum(2)
 
         return read
 
@@ -241,7 +219,6 @@ class MACNetwork(nn.Module):
     def forward(self, image, question, question_len, dropout=0.15):
         b_size = question.size(0)
 
-        # img = self.conv(image)
         img = image
         img = img.view(b_size, self.dim, -1)
 
