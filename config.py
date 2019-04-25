@@ -3,6 +3,30 @@
 # Date: 4/20/19
 # Time: 6:37 PM
 
+import torch
+
+### Learning Parameters
+BASE_LR = 1e-4
+TRAIN_EPOCHS = 25
+BATCH_SIZE = 196
+EARLY_STOPPING_ENABLED = False
+EARLY_STOPPING_PATIENCE = 10
+
+### Model Parameters
+MAX_STEPS = 4
+USE_SELF_ATTENTION = False
+USE_MEMORY_GATE = False
+MAC_UNIT_DIM = {'CLEVR': 512,
+                'gqa': 2048}
+
+### Miscellaneous Config
+MODEL_PREFIX = "model_name"
+RANDOM_SEED = 629
+
+### GPU SETTINGS
+CUDA_DEVICE = 0  # GPU device ID
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 ## dropouts
 encInputDropout = 0.2 # dropout of the rnn inputs to the Question Input Unit
 encStateDropout = 0.0 # dropout of the rnn states of the Question Input Unit

@@ -8,15 +8,10 @@ from torch import optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from config import BASE_LR, TRAIN_EPOCHS, BATCH_SIZE, DEVICE, MAX_STEPS, USE_SELF_ATTENTION, \
+    USE_MEMORY_GATE, MAC_UNIT_DIM
 from dataset import CLEVR, collate_data, transform, GQA
 from model_gqa import MACNetwork
-
-batch_size = 196
-n_epoch = 20
-dim_dict = {'CLEVR': 512,
-            'gqa': 2048}
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 def accumulate(model1, model2, decay=0.999):
@@ -34,7 +29,7 @@ def train(epoch, dataset_type):
         dataset_object = GQA('data/gqa', transform=transform)
 
     train_set = DataLoader(
-        dataset_object, batch_size=batch_size, num_workers=multiprocessing.cpu_count(), collate_fn=collate_data
+        dataset_object, batch_size=BATCH_SIZE, num_workers=multiprocessing.cpu_count(), collate_fn=collate_data
     )
 
     dataset = iter(train_set)
@@ -44,9 +39,9 @@ def train(epoch, dataset_type):
     net.train(True)
     for image, question, q_len, answer in pbar:
         image, question, answer = (
-            image.to(device),
-            question.to(device),
-            answer.to(device),
+            image.to(DEVICE),
+            question.to(DEVICE),
+            answer.to(DEVICE),
         )
 
         net.zero_grad()
@@ -55,7 +50,7 @@ def train(epoch, dataset_type):
         loss.backward()
         optimizer.step()
         correct = output.detach().argmax(1) == answer
-        correct = torch.tensor(correct, dtype=torch.float32).sum() / batch_size
+        correct = torch.tensor(correct, dtype=torch.float32).sum() / BATCH_SIZE
 
         if moving_loss == 0:
             moving_loss = correct
@@ -63,7 +58,6 @@ def train(epoch, dataset_type):
             moving_loss = moving_loss * 0.99 + correct * 0.01
 
         pbar.set_description('Epoch: {}; Loss: {:.8f}; Acc: {:.5f}'.format(epoch + 1, loss.item(), moving_loss))
-
         accumulate(net_running, net)
 
     dataset_object.close()
@@ -76,7 +70,7 @@ def valid(epoch, dataset_type):
         dataset_object = GQA('data/gqa', 'val', transform=None)
 
     valid_set = DataLoader(
-        dataset_object, batch_size=4*batch_size, num_workers=multiprocessing.cpu_count(), collate_fn=collate_data
+        dataset_object, batch_size=4 * BATCH_SIZE, num_workers=multiprocessing.cpu_count(), collate_fn=collate_data
     )
     dataset = iter(valid_set)
 
@@ -89,9 +83,9 @@ def valid(epoch, dataset_type):
         pbar = tqdm(dataset)
         for image, question, q_len, answer in pbar:
             image, question, answer = (
-                image.to(device),
-                question.to(device),
-                answer.to(device),
+                image.to(DEVICE),
+                question.to(DEVICE),
+                answer.to(DEVICE),
             )
 
             output = net_running(image, question, q_len)
@@ -105,7 +99,8 @@ def valid(epoch, dataset_type):
                     correct_counts += 1
                 total_counts += 1
 
-            pbar.set_description('Epoch: {}; Loss: {:.8f}; Acc: {:.5f}'.format(epoch + 1, loss.item(), correct_counts / batches_done))
+            pbar.set_description(
+                'Epoch: {}; Loss: {:.8f}; Acc: {:.5f}'.format(epoch + 1, loss.item(), correct_counts / batches_done))
 
     with open('log/log_{}.txt'.format(str(epoch + 1).zfill(2)), 'w') as w:
         w.write('{:.5f}\n'.format(correct_counts / total_counts))
@@ -124,14 +119,16 @@ if __name__ == '__main__':
     n_words = len(dic['word_dic']) + 1
     n_answers = len(dic['answer_dic'])
 
-    net = MACNetwork(n_words, dim_dict[dataset_type], classes=n_answers, max_step=4).to(device)
-    net_running = MACNetwork(n_words, dim_dict[dataset_type], classes=n_answers, max_step=4).to(device)
+    net = MACNetwork(n_words, MAC_UNIT_DIM[dataset_type], classes=n_answers, max_step=MAX_STEPS,
+                     self_attention=USE_SELF_ATTENTION, memory_gate=USE_MEMORY_GATE).to(DEVICE)
+    net_running = MACNetwork(n_words, MAC_UNIT_DIM[dataset_type], classes=n_answers, max_step=MAX_STEPS,
+                             self_attention=USE_SELF_ATTENTION, memory_gate=USE_MEMORY_GATE).to(DEVICE)
     accumulate(net_running, net, 0)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(net.parameters(), lr=1e-4)
+    optimizer = optim.Adam(net.parameters(), lr=BASE_LR)
 
-    for epoch in range(n_epoch):
+    for epoch in range(TRAIN_EPOCHS):
         train(epoch, dataset_type)
         valid(epoch, dataset_type)
 
