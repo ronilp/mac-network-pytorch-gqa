@@ -70,7 +70,7 @@ def valid(epoch, dataset_type):
         dataset_object = GQA('data/gqa', 'val', transform=None)
 
     valid_set = DataLoader(
-        dataset_object, batch_size=4 * BATCH_SIZE, num_workers=multiprocessing.cpu_count(), collate_fn=collate_data
+        dataset_object, batch_size=BATCH_SIZE, num_workers=multiprocessing.cpu_count(), collate_fn=collate_data
     )
     dataset = iter(valid_set)
 
