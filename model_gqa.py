@@ -1,8 +1,7 @@
 import torch
-from torch.autograd import Variable
-from torch import nn
-from torch.nn.init import kaiming_uniform_, xavier_uniform_, normal
 import torch.nn.functional as F
+from torch import nn
+from torch.nn.init import kaiming_uniform_, xavier_uniform_
 
 import config
 from utils import get_or_load_embeddings
@@ -181,53 +180,28 @@ class MACNetwork(nn.Module):
                 classes=28, dropout=0.15):
         super().__init__()
 
-        self.conv = nn.Sequential(nn.Conv2d(1024, dim, 3, padding=1),
-                                nn.ELU(),
-                                nn.Conv2d(dim, dim, 3, padding=1),
-                                nn.ELU())
-
         self.embed = nn.Embedding(n_vocab, embed_hidden)
         self.embed.weight.data = torch.Tensor(get_or_load_embeddings())
         self.embed.weight.requires_grad = False
-        self.lstm = nn.LSTM(embed_hidden, dim,
-                        batch_first=True, bidirectional=True)
-        self.lstm_proj = nn.Linear(dim * 2, dim)
-
-        self.mac = MACUnit(dim, max_step,
-                        self_attention, memory_gate, dropout)
-
-
-        self.classifier = nn.Sequential(linear(dim * 3, dim),
-                                        nn.ELU(),
-                                        linear(dim, classes))
-
         self.max_step = max_step
         self.dim = dim
 
+        self.lstm = nn.LSTM(embed_hidden, dim, batch_first=True, bidirectional=True)
+        self.lstm_proj = nn.Linear(dim * 2, dim)
+        self.mac = MACUnit(dim, max_step, self_attention, memory_gate, dropout)
+        self.classifier = nn.Sequential(linear(dim * 3, dim), nn.ELU(), linear(dim, classes))
         self.reset()
 
     def reset(self):
-        self.embed.weight.data.uniform_(0, 1)
-
-        kaiming_uniform_(self.conv[0].weight)
-        self.conv[0].bias.data.zero_()
-        kaiming_uniform_(self.conv[2].weight)
-        self.conv[2].bias.data.zero_()
-
         kaiming_uniform_(self.classifier[0].weight)
 
     def forward(self, image, question, question_len, dropout=0.15):
         b_size = question.size(0)
-
-        # img = self.conv(image)
         img = image
         img = img.view(b_size, self.dim, -1)
 
         embed = self.embed(question)
-        embed = nn.utils.rnn.pack_padded_sequence(embed, question_len,
-                                                batch_first=True)
         lstm_out, (h, _) = self.lstm(embed)
-        lstm_out, _ = nn.utils.rnn.pad_packed_sequence(lstm_out, batch_first=True)
         lstm_out = self.lstm_proj(lstm_out)
         h = h.permute(1, 0, 2).contiguous().view(b_size, -1)
 

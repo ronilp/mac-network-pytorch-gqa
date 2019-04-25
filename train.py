@@ -123,6 +123,9 @@ if __name__ == '__main__':
                      self_attention=USE_SELF_ATTENTION, memory_gate=USE_MEMORY_GATE).to(DEVICE)
     net_running = MACNetwork(n_words, MAC_UNIT_DIM[dataset_type], classes=n_answers, max_step=MAX_STEPS,
                              self_attention=USE_SELF_ATTENTION, memory_gate=USE_MEMORY_GATE).to(DEVICE)
+
+    net = nn.DataParallel(net)
+    net_running = nn.DataParallel(net_running)
     accumulate(net_running, net, 0)
 
     criterion = nn.CrossEntropyLoss()
