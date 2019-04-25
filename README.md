@@ -49,6 +49,8 @@ a. Merge object features (this may take some time)</p>
 mv data/gqa_objects.hdf5 data/gqa_features.hdf5
 </code></pre>
 <p>b. Preprocess questions</p>
+<pre><code> sudo pip install block.bootstrap.pytorch murel.bootstrap.pytorch
+</code></pre>
 <pre><code>python preprocess.py gqa data/gqa
 </code></pre>
 <p>!CAUTION! the size of file created by image_feature.py is very large! You may use hdf5 compression, but it will slow down feature extraction.</p>
