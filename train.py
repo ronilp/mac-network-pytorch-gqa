@@ -14,14 +14,6 @@ from dataset import CLEVR, collate_data, transform, GQA
 from model_gqa import MACNetwork
 
 
-def accumulate(model1, model2, decay=0.999):
-    par1 = dict(model1.named_parameters())
-    par2 = dict(model2.named_parameters())
-
-    for k in par1.keys():
-        par1[k].data.mul_(decay).add_(1 - decay, par2[k].data)
-
-
 def train(epoch, dataset_type):
     if dataset_type == "CLEVR":
         dataset_object = CLEVR('data/CLEVR_v1.0', transform=transform)
@@ -34,9 +26,11 @@ def train(epoch, dataset_type):
 
     dataset = iter(train_set)
     pbar = tqdm(dataset)
-    moving_loss = 0
+    running_loss = 0
+    correct_counts = 0
+    total_counts = 0
 
-    net.train(True)
+    net.train()
     for image, question, q_len, answer in pbar:
         image, question, answer = (
             image.to(DEVICE),
@@ -49,16 +43,18 @@ def train(epoch, dataset_type):
         loss = criterion(output, answer)
         loss.backward()
         optimizer.step()
+
         correct = output.detach().argmax(1) == answer
+        correct_counts += sum(correct).item()
+        total_counts += image.size(0)
+
         correct = torch.tensor(correct, dtype=torch.float32).sum() / BATCH_SIZE
+        running_loss += loss.item() / BATCH_SIZE
 
-        if moving_loss == 0:
-            moving_loss = correct
-        else:
-            moving_loss = moving_loss * 0.99 + correct * 0.01
+        pbar.set_description(
+            'Epoch: {}; Loss: {:.8f}; Acc: {:.5f}'.format(epoch + 1, loss.item(), correct))
 
-        pbar.set_description('Epoch: {}; Loss: {:.8f}; Acc: {:.5f}'.format(epoch + 1, loss.item(), moving_loss))
-        accumulate(net_running, net)
+    print('Training loss: {:8f}, accuracy: {:5f}'.format(running_loss / len(train_set.dataset), correct_counts / total_counts))
 
     dataset_object.close()
 
@@ -69,12 +65,11 @@ def valid(epoch, dataset_type):
     else:
         dataset_object = GQA('data/gqa', 'val', transform=None)
 
-    valid_set = DataLoader(
-        dataset_object, batch_size=BATCH_SIZE, num_workers=multiprocessing.cpu_count(), collate_fn=collate_data
-    )
+    valid_set = DataLoader(dataset_object, batch_size=BATCH_SIZE, num_workers=multiprocessing.cpu_count(),
+                           collate_fn=collate_data)
     dataset = iter(valid_set)
 
-    net_running.train(False)
+    net.eval()
     correct_counts = 0
     total_counts = 0
     running_loss = 0.0
@@ -88,7 +83,7 @@ def valid(epoch, dataset_type):
                 answer.to(DEVICE),
             )
 
-            output = net_running(image, question, q_len)
+            output = net(image, question, q_len)
             loss = criterion(output, answer)
             correct = output.detach().argmax(1) == answer
             running_loss += loss.item()
@@ -100,7 +95,7 @@ def valid(epoch, dataset_type):
                 total_counts += 1
 
             pbar.set_description(
-                'Epoch: {}; Loss: {:.8f}; Acc: {:.5f}'.format(epoch + 1, loss.item(), correct_counts / batches_done))
+                'Epoch: {}; Loss: {:.8f}; Acc: {:.5f}'.format(epoch + 1, loss.item(), correct_counts / total_counts))
 
     with open('log/log_{}.txt'.format(str(epoch + 1).zfill(2)), 'w') as w:
         w.write('{:.5f}\n'.format(correct_counts / total_counts))
@@ -121,12 +116,7 @@ if __name__ == '__main__':
 
     net = MACNetwork(n_words, MAC_UNIT_DIM[dataset_type], classes=n_answers, max_step=MAX_STEPS,
                      self_attention=USE_SELF_ATTENTION, memory_gate=USE_MEMORY_GATE).to(DEVICE)
-    net_running = MACNetwork(n_words, MAC_UNIT_DIM[dataset_type], classes=n_answers, max_step=MAX_STEPS,
-                             self_attention=USE_SELF_ATTENTION, memory_gate=USE_MEMORY_GATE).to(DEVICE)
-
     net = nn.DataParallel(net)
-    net_running = nn.DataParallel(net_running)
-    accumulate(net_running, net, 0)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(net.parameters(), lr=BASE_LR)
@@ -136,4 +126,4 @@ if __name__ == '__main__':
         valid(epoch, dataset_type)
 
         with open('checkpoint/checkpoint_{}.model'.format(str(epoch + 1).zfill(2)), 'wb') as f:
-            torch.save(net_running.state_dict(), f)
+            torch.save(net.state_dict(), f)
