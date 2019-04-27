@@ -201,6 +201,7 @@ class MACNetwork(nn.Module):
         img = img.view(b_size, self.dim, -1)
 
         embed = self.embed(question)
+        self.lstm.flatten_parameters()
         lstm_out, (h, _) = self.lstm(embed)
         lstm_out = self.lstm_proj(lstm_out)
         h = h.permute(1, 0, 2).contiguous().view(b_size, -1)
