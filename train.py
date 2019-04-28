@@ -48,13 +48,14 @@ def train(epoch, dataset_type):
         correct_counts += sum(correct).item()
         total_counts += image.size(0)
 
-        correct = torch.tensor(correct, dtype=torch.float32).sum() / BATCH_SIZE
+        correct = correct.clone().type(torch.FloatTensor).detach().sum() / BATCH_SIZE
         running_loss += loss.item() / BATCH_SIZE
 
         pbar.set_description(
             'Epoch: {}; Loss: {:.8f}; Acc: {:.5f}'.format(epoch + 1, loss.item(), correct))
 
-    print('Training loss: {:8f}, accuracy: {:5f}'.format(running_loss / len(train_set.dataset), correct_counts / total_counts))
+    print('Training loss: {:8f}, accuracy: {:5f}'.format(running_loss / len(train_set.dataset),
+                                                         correct_counts / total_counts))
 
     dataset_object.close()
 
@@ -73,7 +74,6 @@ def valid(epoch, dataset_type):
     correct_counts = 0
     total_counts = 0
     running_loss = 0.0
-    batches_done = 0
     with torch.no_grad():
         pbar = tqdm(dataset)
         for image, question, q_len, answer in pbar:
@@ -86,13 +86,9 @@ def valid(epoch, dataset_type):
             output = net(image, question, q_len)
             loss = criterion(output, answer)
             correct = output.detach().argmax(1) == answer
-            running_loss += loss.item()
-
-            batches_done += 1
-            for c in correct:
-                if c:
-                    correct_counts += 1
-                total_counts += 1
+            correct_counts += sum(correct).item()
+            total_counts += image.size(0)
+            running_loss += loss.item() / BATCH_SIZE
 
             pbar.set_description(
                 'Epoch: {}; Loss: {:.8f}; Acc: {:.5f}'.format(epoch + 1, loss.item(), correct_counts / total_counts))
@@ -100,8 +96,8 @@ def valid(epoch, dataset_type):
     with open('log/log_{}.txt'.format(str(epoch + 1).zfill(2)), 'w') as w:
         w.write('{:.5f}\n'.format(correct_counts / total_counts))
 
-    print('Validation Accuracy: {:.5f}'.format(correct_counts / total_counts))
-    print('Validation Loss: {:.8f}'.format(running_loss / total_counts))
+    print('Training loss: {:8f}, accuracy: {:5f}'.format(running_loss / len(valid_set.dataset),
+                                                         correct_counts / total_counts))
 
     dataset_object.close()
 
