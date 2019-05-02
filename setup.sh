@@ -1,6 +1,3 @@
-git clone https://github.com/ronilp/mac-network-pytorch-gqa.git
-cd mac-network-pytorch-gqa
-
 cd data
 mkdir gqa && cd gqa
 wget https://nlp.stanford.edu/data/gqa/data1.2.zip
