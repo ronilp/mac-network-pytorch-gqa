@@ -8,6 +8,7 @@
 <li>Pillow</li>
 <li>nltk</li>
 <li>tqdm</li>
+<l1>block.bootstrap.pytorch murel.bootstrap.pytorch</l1>
 </ul>
 <p>To train:</p>
 <ol>
