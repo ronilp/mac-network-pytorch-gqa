@@ -46,7 +46,7 @@ a. Extract image features</li>
 </code></pre>
 <p>For GQA<br>
 a. Merge object features (this may take some time)</p>
-<pre><code>python merge.py --objects
+<pre><code>python merge.py --name objects
 mv data/gqa_objects.hdf5 data/gqa_features.hdf5
 </code></pre>
 <p>b. Preprocess questions</p>
