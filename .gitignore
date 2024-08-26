@@ -3,7 +3,8 @@
 *.model
 log/*.txt
 *.pkl
-
+data/**
+w2v/**
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

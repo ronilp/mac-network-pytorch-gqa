@@ -1,0 +1,8 @@
+Pillow
+nltk
+tqdm
+block.bootstrap.pytorch
+murel.bootstrap.pytorch
+konlpy
+mecab-python3
+gensim

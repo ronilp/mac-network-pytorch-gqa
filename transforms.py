@@ -2,7 +2,7 @@
 
 from PIL import Image
 import collections
-
+collections.Iterable = collections.abc.Iterable
 class Scale(object):
     """Rescale the input PIL.Image to the given size.
 

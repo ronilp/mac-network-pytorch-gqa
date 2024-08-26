@@ -27,9 +27,9 @@ def accumulate(model1, model2, decay=0.999):
         par1[k].data.mul_(decay).add_(1 - decay, par2[k].data)
 
 
-def train(epoch, dataset_type):
+def train(epoch, dataset_type, lang='en'):
     if dataset_type == "CLEVR":
-        dataset_object = CLEVR('data/CLEVR_v1.0', transform=transform)
+        dataset_object = CLEVR('data/CLEVR', transform=transform, lang=lang)
     else:
         dataset_object = GQA('data/gqa', transform=transform)
 
@@ -69,9 +69,9 @@ def train(epoch, dataset_type):
     dataset_object.close()
 
 
-def valid(epoch, dataset_type):
+def valid(epoch, dataset_type,lang='en'):
     if dataset_type == "CLEVR":
-        dataset_object = CLEVR('data/CLEVR_v1.0', 'val', transform=None)
+        dataset_object = CLEVR('data/CLEVR', 'val', transform=None, lang=lang)
     else:
         dataset_object = GQA('data/gqa', 'val', transform=None)
 
@@ -118,6 +118,7 @@ def valid(epoch, dataset_type):
 
 if __name__ == '__main__':
     dataset_type = sys.argv[1]
+    lang = sys.argv[2]
     with open(f'data/{dataset_type}_dic.pkl', 'rb') as f:
         dic = pickle.load(f)
 
@@ -132,8 +133,8 @@ if __name__ == '__main__':
     optimizer = optim.Adam(net.parameters(), lr=1e-4)
 
     for epoch in range(n_epoch):
-        train(epoch, dataset_type)
-        valid(epoch, dataset_type)
+        train(epoch, dataset_type,lang=lang)
+        valid(epoch, dataset_type,lang=lang)
 
-        with open('checkpoint/checkpoint_{}.model'.format(str(epoch + 1).zfill(2)), 'wb') as f:
+        with open(f'checkpoint/checkpoint_{lang}.model'.format(str(epoch + 1).zfill(2)), 'wb') as f:
             torch.save(net_running.state_dict(), f)
